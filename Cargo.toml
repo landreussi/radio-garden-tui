@@ -1,0 +1,29 @@
+[[bin]]
+name = "rgt"
+path = "src/main.rs"
+
+[package]
+name = "radio-garden-tui"
+description = "A terminal user interface for radio.garden"
+homepage = "https://github.com/landreussi/radio-garden-tui"
+repository = "https://github.com/landreussi/radio-garden-tui"
+documentation = "https://github.com/landreussi/radio-garden-tui"
+keywords = ["radio", "garden", "tui", "cli", "terminal"]
+categories = ["command-line-utilities"]
+version = "0.1.0"
+authors = ["Lucas Andreussi <lucasandreussi@gmail.com>"]
+edition = "2021"
+
+[workspace]
+resolver = "2"
+members = [
+    "api",
+]
+
+[workspace.dependencies]
+url = "2.4.0"
+
+[dependencies]
+api = { path = "api" }
+tokio = { version = "1.29.1", features = [ "full" ] }
+url = { workspace = true }
