@@ -8,7 +8,7 @@ pub type Point = [f64; 2];
 pub struct ListPlacesResponse {
     //api_version: usize,
     //version: String,
-    pub data: Data
+    pub data: Data,
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,16 +35,19 @@ pub struct RadioGardenApi {
 
 impl RadioGardenApi {
     pub fn new(url: Url) -> Self {
-        Self { url, client: Client::new() }
+        Self {
+            url,
+            client: Client::new(),
+        }
     }
 
+    // TODO: make it return only a vec
     pub async fn list_places(&self) -> Result<ListPlacesResponse> {
-        let url = self.url.join("secure/places").expect("Could not join API url to path");
+        let url = self
+            .url
+            .join("secure/places")
+            .expect("Could not join API url to path");
 
-        self.client.get(url)
-            .send()
-            .await?
-            .json()
-            .await
+        self.client.get(url).send().await?.json().await
     }
 }
