@@ -17,7 +17,10 @@ with nixpkgs; pkgs.mkShell {
     pkg-config
     openssl
     rust
-  ];
+  ] ++ (lib.optionals stdenv.isDarwin [
+    darwin.libiconv
+    darwin.apple_sdk.frameworks.Security
+  ]);
 
   LIBCLANG_PATH = "${llvmPackages.libclang}/lib";
   RUST_SRC_PATH = "${rust}/lib/rustlib/src/rust/library/";

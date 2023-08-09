@@ -32,7 +32,10 @@ async fn main() -> Result<()> {
 
     terminal.draw(|f| {
         let size = f.size();
-        let items: Vec<_> = places.iter().map(|p| ListItem::new(format!("{} - {}", p.country, p.title))).collect();
+        let items: Vec<_> = places
+            .iter()
+            .map(|p| ListItem::new(format!("{} - {}", p.country, p.title)))
+            .collect();
         let list = List::new(items)
             .block(Block::default().title("List").borders(Borders::ALL))
             .style(Style::default().fg(Color::White))
