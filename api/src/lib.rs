@@ -24,7 +24,8 @@ pub struct Place {
     pub geo: Point,
     pub url: String,
     pub country: String,
-    pub title: String,
+    #[serde(rename = "title")]
+    pub city: String,
     // boost: bool
 }
 
@@ -41,13 +42,22 @@ impl RadioGardenApi {
         }
     }
 
-    // TODO: make it return only a vec
-    pub async fn list_places(&self) -> Result<ListPlacesResponse> {
+    pub async fn list_places(&self) -> Result<Vec<Place>> {
         let url = self
             .url
             .join("secure/places")
             .expect("Could not join API url to path");
 
-        self.client.get(url).send().await?.json().await
+        let places = self
+            .client
+            .get(url)
+            .send()
+            .await?
+            .json::<ListPlacesResponse>()
+            .await?
+            .data
+            .list;
+
+        Ok(places)
     }
 }
