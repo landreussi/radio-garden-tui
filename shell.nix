@@ -9,7 +9,7 @@ let
     ref = "master";
   };
   nixpkgs = import pinned { overlays = [ mozillaOverlay ]; };
-  rust = with nixpkgs; (rustChannelOf { channel = "1.71"; }).rust;
+  rust = with nixpkgs; (rustChannelOf { channel = "nightly"; date = "2023-09-03";}).rust;
 in
 with nixpkgs; pkgs.mkShell {
   buildInputs = [
