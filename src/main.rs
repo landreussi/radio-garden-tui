@@ -9,13 +9,15 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use state::*;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
+    prelude::{Alignment, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    text::Span,
+    widgets::{Block, BorderType, Borders, List, ListItem, Wrap},
     Frame, Terminal,
 };
+use state::*;
 use url::Url;
 
 struct App {
@@ -46,7 +48,24 @@ impl App {
         Ok(())
     }
     fn draw_entrypoint(state: &mut State, f: &mut Frame<impl Backend>, places: &[Place]) {
-        let rects = f.size().split_horizontally(2);
+        // TODO: break this in functions to draw every component.
+        use ratatui::{text::Line, widgets::Paragraph};
+        let search_text: Vec<Line> = vec!["blah".into()];
+        let search_bar = Paragraph::new(search_text)
+            .block(
+                Block::new()
+                    .title("Search")
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded),
+            )
+            .alignment(Alignment::Left);
+        let search_bar_area = Rect::new(0, 0, f.size().width, 3);
+        f.render_widget(search_bar, search_bar_area);
+
+        let mut rect = f.size();
+        rect.y = 3;
+        rect.height -= 3;
+        let rects = rect.split_horizontally(2);
         let countries: Vec<_> = places
             .iter()
             .map(|p| ListItem::new(p.country.as_str()))
