@@ -1,5 +1,5 @@
 use strum::{EnumCount, FromRepr};
-use tui::{style::Color, widgets::ListState};
+use ratatui::{style::Color, widgets::ListState};
 
 pub(super) fn r#move(state: &mut ListState, up: bool, mut max_value: usize) {
     let mut selected = state.selected();

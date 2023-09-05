@@ -10,7 +10,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use state::*;
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Style},
     widgets::{Block, BorderType, Borders, List, ListItem},

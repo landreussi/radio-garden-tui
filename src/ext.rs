@@ -1,4 +1,4 @@
-use tui::layout::Rect;
+use ratatui::layout::Rect;
 
 pub(super) trait Split {
     fn split_horizontally(&self, splits: u16) -> Vec<Rect>;
