@@ -5,7 +5,7 @@ let
       ref = "master";
     });
   pinned = builtins.fetchGit {
-    url = "https://github.com/nixos/nixpkgs/";
+    url = "https://github.com/nixos/nixpkgs.git";
     ref = "master";
   };
   nixpkgs = import pinned { overlays = [ mozillaOverlay ]; };
@@ -18,10 +18,12 @@ with nixpkgs; pkgs.mkShell {
     openssl
     rust
   ] ++ (lib.optionals stdenv.isDarwin [
-    darwin.libiconv
-    darwin.apple_sdk.frameworks.Security
+    libiconv
+    darwin.Security
+    darwin.apple_sdk.frameworks.CoreFoundation
   ]);
 
   LIBCLANG_PATH = "${llvmPackages.libclang}/lib";
   RUST_SRC_PATH = "${rust}/lib/rustlib/src/rust/library/";
+  NIX_LDFLAGS = lib.optionals stdenv.isDarwin "-F${darwin.Security}/Library/Frameworks -F${darwin.apple_sdk.frameworks.CoreFoundation}/Library/Frameworks";
 }
