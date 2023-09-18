@@ -18,7 +18,6 @@ with nixpkgs; pkgs.mkShell {
     openssl
     rust
   ] ++ (lib.optionals stdenv.isDarwin [
-    libiconv
     darwin.Security
     darwin.apple_sdk.frameworks.CoreFoundation
   ]);

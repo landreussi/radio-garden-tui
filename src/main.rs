@@ -3,7 +3,7 @@ use std::io::{stdout, Result, Stdout};
 pub mod ext;
 use ext::*;
 pub mod state;
-use api::{Place, RadioGardenApi};
+use api::RadioGardenApi;
 use crossterm::{
     event::{read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent},
     execute,
@@ -13,8 +13,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     prelude::{Alignment, Rect},
     style::{Color, Style},
-    text::Span,
-    widgets::{Block, BorderType, Borders, List, ListItem, Wrap},
+    widgets::{Block, BorderType, Borders, List, ListItem},
     Frame, Terminal,
 };
 use state::*;
@@ -24,7 +23,6 @@ struct App {
     api: RadioGardenApi,
     terminal: Terminal<CrosstermBackend<Stdout>>,
     state: State,
-    places: Vec<Place>,
 }
 
 impl App {
@@ -33,21 +31,20 @@ impl App {
             api,
             terminal,
             state: State::new(),
-            places: vec![],
         }
     }
     async fn search_places(&mut self, _query: &str) {
         let places = self.api.list_places().await.unwrap();
 
-        self.places = places;
+        self.state.places = places;
     }
     fn draw(&mut self) -> Result<()> {
         self.terminal
-            .draw(|f| Self::draw_entrypoint(&mut self.state, f, &self.places))?;
+            .draw(|f| Self::draw_entrypoint(&mut self.state, f))?;
 
         Ok(())
     }
-    fn draw_entrypoint(state: &mut State, f: &mut Frame<impl Backend>, places: &[Place]) {
+    fn draw_entrypoint(state: &mut State, f: &mut Frame<impl Backend>) {
         // TODO: break this in functions to draw every component.
         use ratatui::{text::Line, widgets::Paragraph};
         let search_text: Vec<Line> = vec!["blah".into()];
@@ -66,7 +63,8 @@ impl App {
         rect.y = 3;
         rect.height -= 3;
         let rects = rect.split_horizontally(2);
-        let countries: Vec<_> = places
+        let countries: Vec<_> = state
+            .places
             .iter()
             .map(|p| ListItem::new(p.country.as_str()))
             .collect();
@@ -82,7 +80,8 @@ impl App {
             .highlight_style(Style::default().bg(countries_fg).fg(Color::Black));
         f.render_stateful_widget(countries_list, rects[0], &mut state.countries);
 
-        let cities: Vec<_> = places
+        let cities: Vec<_> = state
+            .places
             .iter()
             .map(|p| ListItem::new(p.city.as_str()))
             .collect();
@@ -111,10 +110,10 @@ impl App {
     fn key_event(&mut self, KeyEvent { code, .. }: KeyEvent) {
         match code {
             KeyCode::Esc => self.close(),
-            KeyCode::Up | KeyCode::Char('k') => self.move_up(),
-            KeyCode::Down | KeyCode::Char('j') => self.move_down(),
-            KeyCode::Left | KeyCode::Char('h') => self.move_left(),
-            KeyCode::Right | KeyCode::Char('l') => self.move_right(),
+            KeyCode::Up | KeyCode::Char('k') => self.state.move_up(),
+            KeyCode::Down | KeyCode::Char('j') => self.state.move_down(),
+            KeyCode::Left | KeyCode::Char('h') => self.state.move_left(),
+            KeyCode::Right | KeyCode::Char('l') => self.state.move_right(),
             _ => unreachable!("unreachable yet, will tracing::info when we do loggings"),
         }
 
@@ -122,21 +121,6 @@ impl App {
     }
 
     // TODO: this should be moved to state mod, including the list of places.
-    fn move_up(&mut self) {
-        let focused = self.state.focused();
-        r#move(focused, true, self.places.len())
-    }
-    fn move_down(&mut self) {
-        let focused = self.state.focused();
-        r#move(focused, false, self.places.len())
-    }
-    fn move_right(&mut self) {
-        self.state.move_focus(true)
-    }
-    fn move_left(&mut self) {
-        self.state.move_focus(false)
-    }
-
     // TODO: treat right those unwraps.
     fn close(&mut self) {
         disable_raw_mode().unwrap();

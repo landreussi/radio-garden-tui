@@ -1,5 +1,6 @@
-use strum::{EnumCount, FromRepr};
+use api::Place;
 use ratatui::{style::Color, widgets::ListState};
+use strum::{EnumCount, FromRepr};
 
 pub(super) fn r#move(state: &mut ListState, up: bool, mut max_value: usize) {
     let mut selected = state.selected();
@@ -16,7 +17,7 @@ pub(super) fn r#move(state: &mut ListState, up: bool, mut max_value: usize) {
     state.select(selected);
 }
 
-#[derive(Default, PartialEq, Copy, Clone, EnumCount, FromRepr)]
+#[derive(Default, PartialEq, Clone, EnumCount, FromRepr)]
 #[repr(u8)]
 pub(super) enum Focus {
     #[default]
@@ -39,11 +40,19 @@ pub(super) struct State {
     pub countries: ListState,
     pub cities: ListState,
     pub focus: Focus,
+    pub places: Vec<Place>,
 }
 
 impl State {
-    pub(super) fn move_focus(&mut self, right: bool) {
-        let mut focus = self.focus as u8;
+    pub(super) fn new() -> Self {
+        let mut state = Self::default();
+        state.countries.select(Some(0));
+        state.cities.select(Some(0));
+
+        state
+    }
+    fn move_focus(&mut self, right: bool) {
+        let mut focus = self.focus.clone() as u8;
         if right {
             if focus == Focus::COUNT as u8 {
                 focus = 1;
@@ -58,20 +67,26 @@ impl State {
 
         self.focus = Focus::from_repr(focus).unwrap();
     }
-    pub(super) fn focused(&mut self) -> &mut ListState {
+    fn focused(&mut self) -> &mut ListState {
         match self.focus {
             Focus::Cities => &mut self.cities,
             Focus::Countries => &mut self.countries,
         }
     }
-}
-
-impl State {
-    pub(super) fn new() -> Self {
-        let mut state = Self::default();
-        state.countries.select(Some(0));
-        state.cities.select(Some(0));
-
-        state
+    pub(super) fn move_up(&mut self) {
+        let num_places = self.places.len();
+        let focused = self.focused();
+        r#move(focused, true, num_places)
+    }
+    pub(super) fn move_down(&mut self) {
+        let num_places = self.places.len();
+        let focused = self.focused();
+        r#move(focused, false, num_places)
+    }
+    pub(super) fn move_right(&mut self) {
+        self.move_focus(true)
+    }
+    pub(super) fn move_left(&mut self) {
+        self.move_focus(false)
     }
 }
