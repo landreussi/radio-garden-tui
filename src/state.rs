@@ -19,7 +19,7 @@ pub(super) fn r#move(state: &mut ListState, up: bool, mut max_value: usize) {
 
 #[derive(Default, PartialEq, Clone, EnumCount, FromRepr)]
 #[repr(u8)]
-pub(super) enum Focus {
+pub enum Focus {
     #[default]
     Countries = 1,
     Cities = 2,
@@ -36,7 +36,7 @@ impl Focus {
 }
 
 #[derive(Default)]
-pub(super) struct State {
+pub struct State {
     pub countries: ListState,
     pub cities: ListState,
     pub focus: Focus,

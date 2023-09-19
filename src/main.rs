@@ -1,32 +1,37 @@
-use std::io::{stdout, Result, Stdout};
+use std::io::{stdout, Result};
 
 pub mod ext;
-use ext::*;
 pub mod state;
+pub mod ui;
+
+use std::io::Write;
+
 use api::RadioGardenApi;
 use crossterm::{
     event::{read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ext::*;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
-    prelude::{Alignment, Rect},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem},
+    prelude::Rect,
     Frame, Terminal,
 };
 use state::*;
 use url::Url;
 
-struct App {
+struct App<B: Backend> {
     api: RadioGardenApi,
-    terminal: Terminal<CrosstermBackend<Stdout>>,
+    terminal: Terminal<B>,
     state: State,
 }
 
-impl App {
-    fn new(api: RadioGardenApi, terminal: Terminal<CrosstermBackend<Stdout>>) -> Self {
+impl<B> App<B>
+where
+    B: Backend + Write,
+{
+    fn new(api: RadioGardenApi, terminal: Terminal<B>) -> Self {
         Self {
             api,
             terminal,
@@ -44,58 +49,18 @@ impl App {
 
         Ok(())
     }
-    fn draw_entrypoint(state: &mut State, f: &mut Frame<impl Backend>) {
-        // TODO: break this in functions to draw every component.
-        use ratatui::{text::Line, widgets::Paragraph};
-        let search_text: Vec<Line> = vec!["blah".into()];
-        let search_bar = Paragraph::new(search_text)
-            .block(
-                Block::new()
-                    .title("Search")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
-            )
-            .alignment(Alignment::Left);
-        let search_bar_area = Rect::new(0, 0, f.size().width, 3);
-        f.render_widget(search_bar, search_bar_area);
+    fn draw_entrypoint(state: &mut State, frame: &mut Frame<B>) {
+        let mut terminal_area = frame.size();
 
-        let mut rect = f.size();
-        rect.y = 3;
-        rect.height -= 3;
-        let rects = rect.split_horizontally(2);
-        let countries: Vec<_> = state
-            .places
-            .iter()
-            .map(|p| ListItem::new(p.country.as_str()))
-            .collect();
-        let countries_fg = state.focus.color_from(&Focus::Countries);
-        let countries_list = List::new(countries)
-            .block(
-                Block::default()
-                    .title("Countries")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
-            )
-            .style(Style::default().fg(countries_fg))
-            .highlight_style(Style::default().bg(countries_fg).fg(Color::Black));
-        f.render_stateful_widget(countries_list, rects[0], &mut state.countries);
+        let search_bar_area = Rect::new(0, 0, terminal_area.width, ui::search::SEARCH_BAR_HEIGHT);
+        ui::search::draw(state, frame, search_bar_area);
+        terminal_area.y = ui::search::SEARCH_BAR_HEIGHT;
+        terminal_area.height -= ui::search::SEARCH_BAR_HEIGHT;
 
-        let cities: Vec<_> = state
-            .places
-            .iter()
-            .map(|p| ListItem::new(p.city.as_str()))
-            .collect();
-        let cities_fg = state.focus.color_from(&Focus::Cities);
-        let cities_list = List::new(cities)
-            .block(
-                Block::default()
-                    .title("Cities")
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded),
-            )
-            .style(Style::default().fg(cities_fg))
-            .highlight_style(Style::default().bg(cities_fg).fg(Color::Black));
-        f.render_stateful_widget(cities_list, rects[1], &mut state.cities);
+        let rects = terminal_area.split_vertically(2);
+
+        ui::countries::draw(state, frame, rects[0]);
+        ui::cities::draw(state, frame, rects[1]);
     }
 
     // TODO: this should be async in the future.
@@ -113,7 +78,7 @@ impl App {
             KeyCode::Up | KeyCode::Char('k') => self.state.move_up(),
             KeyCode::Down | KeyCode::Char('j') => self.state.move_down(),
             KeyCode::Left | KeyCode::Char('h') => self.state.move_left(),
-            KeyCode::Right | KeyCode::Char('l') => self.state.move_right(),
+            KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => self.state.move_right(),
             _ => unreachable!("unreachable yet, will tracing::info when we do loggings"),
         }
 
