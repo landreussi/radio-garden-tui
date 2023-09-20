@@ -12,13 +12,13 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use ext::*;
+use ext::Split;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     prelude::Rect,
     Frame, Terminal,
 };
-use state::*;
+use state::{Focus, State};
 use url::Url;
 
 struct App<B: Backend> {
@@ -38,7 +38,7 @@ where
             state: State::new(),
         }
     }
-    async fn search_places(&mut self, _query: &str) {
+    async fn search_places(&mut self) {
         let places = self.api.list_places().await.unwrap();
 
         self.state.places = places;
@@ -73,19 +73,35 @@ where
     }
 
     fn key_event(&mut self, KeyEvent { code, .. }: KeyEvent) {
-        match code {
-            KeyCode::Esc => self.close(),
-            KeyCode::Up | KeyCode::Char('k') => self.state.move_up(),
-            KeyCode::Down | KeyCode::Char('j') => self.state.move_down(),
-            KeyCode::Left | KeyCode::Char('h') => self.state.move_left(),
-            KeyCode::Right | KeyCode::Char('l') | KeyCode::Tab => self.state.move_right(),
-            _ => unreachable!("unreachable yet, will tracing::info when we do loggings"),
+        if self.state.focus == Focus::Search {
+            match code {
+                KeyCode::Down => self.state.move_down(),
+                KeyCode::Char(c) => self.state.search.push(c),
+                KeyCode::Backspace => {
+                    let _ = self.state.search.pop();
+                }
+                KeyCode::Esc => self.close(),
+                _ => {}
+            }
+        } else {
+            match code {
+                KeyCode::Esc => self.close(),
+                KeyCode::Up | KeyCode::Char('k') | KeyCode::Char('K') => self.state.move_up(),
+                KeyCode::Down | KeyCode::Char('j') | KeyCode::Char('J') => self.state.move_down(),
+                KeyCode::Left | KeyCode::Char('h') | KeyCode::Char('H') => self.state.move_left(),
+                KeyCode::Right | KeyCode::Char('l') | KeyCode::Char('L') | KeyCode::Tab => {
+                    self.state.move_right()
+                }
+                KeyCode::Char('/') => self.state.move_to_search(),
+                _ => {
+                    // tracing::info!("");
+                }
+            }
         }
 
         self.draw().unwrap();
     }
 
-    // TODO: this should be moved to state mod, including the list of places.
     // TODO: treat right those unwraps.
     fn close(&mut self) {
         disable_raw_mode().unwrap();
@@ -112,7 +128,7 @@ async fn main() -> Result<()> {
     let terminal = Terminal::new(backend)?;
     let mut app = App::new(api, terminal);
 
-    app.search_places("").await;
+    app.search_places().await;
     app.draw()?;
     app.event_loop();
 

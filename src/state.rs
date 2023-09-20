@@ -21,6 +21,7 @@ pub(super) fn r#move(state: &mut ListState, up: bool, mut max_value: usize) {
 #[repr(u8)]
 pub enum Focus {
     #[default]
+    Search = 0,
     Countries = 1,
     Cities = 2,
 }
@@ -39,6 +40,7 @@ impl Focus {
 pub struct State {
     pub countries: ListState,
     pub cities: ListState,
+    pub search: String,
     pub focus: Focus,
     pub places: Vec<Place>,
 }
@@ -70,7 +72,7 @@ impl State {
     fn focused(&mut self) -> &mut ListState {
         match self.focus {
             Focus::Cities => &mut self.cities,
-            Focus::Countries => &mut self.countries,
+            Focus::Countries | Focus::Search => &mut self.countries,
         }
     }
     pub(super) fn move_up(&mut self) {
@@ -79,14 +81,21 @@ impl State {
         r#move(focused, true, num_places)
     }
     pub(super) fn move_down(&mut self) {
-        let num_places = self.places.len();
-        let focused = self.focused();
-        r#move(focused, false, num_places)
+        if self.focus == Focus::Search {
+            self.focus = Focus::Countries;
+        } else {
+            let num_places = self.places.len();
+            let focused = self.focused();
+            r#move(focused, false, num_places)
+        }
     }
     pub(super) fn move_right(&mut self) {
         self.move_focus(true)
     }
     pub(super) fn move_left(&mut self) {
         self.move_focus(false)
+    }
+    pub(super) fn move_to_search(&mut self) {
+        self.focus = Focus::from_repr(0).unwrap();
     }
 }
